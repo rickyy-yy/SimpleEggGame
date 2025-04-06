@@ -244,26 +244,38 @@ def egg_shop():
             match choice:
                 case 1:
                     if can_afford(10):
-                        purchase_common_egg()
-                        break
+                        if not is_incubator_full():
+                            purchase_common_egg()
+                            break
+                        else:
+                            incubator_full()
                     else:
                         not_enough_money()
                 case 2:
                     if can_afford(25):
-                        purchase_uncommon_egg()
-                        break
+                        if not is_incubator_full():
+                            purchase_uncommon_egg()
+                            break
+                        else:
+                            incubator_full()
                     else:
                         not_enough_money()
                 case 3:
                     if can_afford(50):
-                        purchase_rare_egg()
-                        break
+                        if not is_incubator_full():
+                            purchase_rare_egg()
+                            break
+                        else:
+                            incubator_full()
                     else:
                         not_enough_money()
                 case 4:
                     if can_afford(100):
-                        purchase_legendary_egg()
-                        break
+                        if not is_incubator_full():
+                            purchase_legendary_egg()
+                            break
+                        else:
+                            incubator_full()
                     else:
                         not_enough_money()
                 case _:
@@ -337,9 +349,11 @@ def give_legendary_egg():
 
 
 def menu():
-    print("==========Main Menu==========")
+    print(f"=====Eggs: {check_number_of_eggs()}===== Main Menu =====Money: ${money}=====")
     print("")
     print("1| Egg Shop")
+    print("2| Egg Incubators")
+    print("3| Spirit Pouch")
     print("")
     while True:
         try:
@@ -347,6 +361,10 @@ def menu():
             match choice:
                 case 1:
                     egg_shop()
+                case 2:
+                    view_eggs()
+                case 3:
+                    view_spirits()
                 case _:
                     pass
         except ValueError:
@@ -371,6 +389,92 @@ def check_for_hatched_eggs():
         if bool(hatched):
             new_spirit = Spirit(rarity, worth)
             new_spirit.store_spirit()
+
+
+def view_eggs():
+    loaded_eggs = []
+    index = 0
+    with open(EGG_STORAGE_PATH, "r") as file:
+        lines = file.readlines()
+        eggs = json.loads(lines[0])
+        for egg in eggs:
+            current_egg = eggs[egg]
+            rarity = current_egg["Rarity"]
+            hatch_datetime = datetime.strptime(current_egg["Hatch Datetime"], '%d-%m-%Y, %H:%M:%S')
+            worth = current_egg["Worth"]
+            time_to_hatch = str(hatch_datetime - datetime.now()).split('.')[0]
+
+            loaded_eggs.append({"Rarity": rarity,
+                                "Worth": f"${worth}",
+                                "Time to Hatch": time_to_hatch})
+
+        print("")
+        print("=============Egg Inventory=============")
+        print("No  |  Rarity   | Worth | Time to Hatch")
+        for egg in loaded_eggs:
+            index += 1
+            print("{0:<2}  |  {1:<9}| ${2:<4} | {3}".format(index, rarity, worth, time_to_hatch))
+        print("")
+
+
+def view_spirits():
+    loaded_spirits = []
+    index = 0
+    with open(SPIRIT_STORAGE_PATH, "r") as file:
+        lines = file.readlines()
+        spirits = json.loads(lines[0])
+        for spirit in spirits:
+            current_spirit = spirits[spirit]
+            rarity = current_spirit["Rarity"]
+            variant_name = current_spirit["Variant Name"]
+            worth = current_spirit["Worth"]
+            gold_production = current_spirit["Gold per Minute"]
+
+            loaded_spirits.append({"Rarity": rarity,
+                                   "Variant Name": variant_name,
+                                   "Worth": f"${worth}",
+                                   "Gold per Minute": gold_production})
+
+        print("")
+        print("===================Egg Inventory===================")
+        print("No |  Rarity   |  Variant  |  Worth  | Gold/Minute")
+        for spirit in loaded_spirits:
+            index += 1
+            print("{0}  |  {1:<9}|  {2:<6}   |  ${3:<4} | {4}".format(index, rarity, variant_name, worth, gold_production))
+        print("")
+
+
+def check_number_of_eggs():
+    with open(EGG_STORAGE_PATH, "r") as file:
+        lines = file.readlines()
+        if lines:
+            lines = json.loads(lines[0])
+            number_of_eggs = len(lines)
+            return number_of_eggs
+        else:
+            return 0
+
+
+def check_number_of_spirits():
+    with open(SPIRIT_STORAGE_PATH, "r") as file:
+        lines = file.readlines()
+        if lines:
+            lines = json.loads(lines[0])
+            number_of_spirits = len(lines)
+            return number_of_spirits
+        else:
+            return 0
+
+
+def is_incubator_full():
+    if check_number_of_eggs() < 10:
+        return False
+    return True
+
+
+def incubator_full():
+    print("Oops! You do not have enough space in your incubator. Sell or hatch an egg first.")
+
 
 check_spirit_storage()
 check_egg_storage()
