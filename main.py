@@ -1,8 +1,8 @@
-from datetime import *
-import random
-import os
 import json
+import os
+import random
 import time
+from datetime import *
 
 COMMON_SPIRITS = ["Wood", "Grass", "Fire"]
 UNCOMMON_SPIRITS = ["Water", "Wind", "Clover"]
@@ -10,8 +10,9 @@ RARE_SPIRITS = ["Gold", "Metal", "Oil"]
 LEGENDARY_SPIRITS = ["Human", "Monster", "Evil"]
 EGG_STORAGE_PATH = r"C:\Users\Richie\Documents\Python\SimpleEggGame\egg_storage.json"
 SPIRIT_STORAGE_PATH = r"C:\Users\Richie\Documents\Python\SimpleEggGame\spirit_storage.json"
+MONEY_PATH = r"C:\Users\Richie\Documents\Python\SimpleEggGame\money.txt"
 
-money = 100
+money: int
 
 
 class Egg:
@@ -196,7 +197,27 @@ def check_egg_storage():
 def check_spirit_storage():
     if not os.path.exists(SPIRIT_STORAGE_PATH):
         with open(SPIRIT_STORAGE_PATH, "x") as file:
-            pass
+            file.write("{}")
+
+
+def check_money():
+    if not os.path.exists(MONEY_PATH):
+        with open(MONEY_PATH, "x") as file:
+            file.write("100")
+
+    get_money()
+
+
+def get_money():
+    global money
+    with open(MONEY_PATH, "r") as file:
+        money = int(file.readline())
+
+
+def update_money():
+    global money
+    with open(MONEY_PATH, "w") as file:
+        file.write(str(money))
 
 
 def get_next_egg_id():
@@ -380,7 +401,8 @@ def check_for_hatched_eggs():
         eggs = file.readlines()
         loaded_eggs = json.loads(eggs[0])
 
-    for egg_id, egg_data in loaded_eggs.items():
+    for egg_id in loaded_eggs.copy():
+        egg_data = loaded_eggs[egg_id]
         rarity = egg_data["Rarity"]
         hatch_datetime = datetime.strptime(egg_data["Hatch Datetime"], '%d-%m-%Y, %H:%M:%S')
         worth = float(egg_data["Worth"])
@@ -389,6 +411,17 @@ def check_for_hatched_eggs():
         if bool(hatched):
             new_spirit = Spirit(rarity, worth)
             new_spirit.store_spirit()
+            loaded_eggs.pop(egg_id)
+
+        if hatch_datetime - datetime.now() < timedelta(seconds=0):
+            new_spirit = Spirit(rarity, worth)
+            new_spirit.store_spirit()
+            loaded_eggs.pop(egg_id)
+
+
+    with open(EGG_STORAGE_PATH, "w") as file:
+        eggs = json.dumps(loaded_eggs)
+        file.write(eggs)
 
 
 def view_eggs():
@@ -405,7 +438,7 @@ def view_eggs():
             time_to_hatch = str(hatch_datetime - datetime.now()).split('.')[0]
 
             loaded_eggs.append({"Rarity": rarity,
-                                "Worth": f"${worth}",
+                                "Worth": f"{worth}",
                                 "Time to Hatch": time_to_hatch})
 
         print("")
@@ -413,7 +446,7 @@ def view_eggs():
         print("No  |  Rarity   | Worth | Time to Hatch")
         for egg in loaded_eggs:
             index += 1
-            print("{0:<2}  |  {1:<9}| ${2:<4} | {3}".format(index, rarity, worth, time_to_hatch))
+            print("{0:<2}  |  {1:<9}| ${2:<4} | {3}".format(index, egg['Rarity'], egg['Worth'], egg['Time to Hatch']))
         print("")
 
 
@@ -432,15 +465,15 @@ def view_spirits():
 
             loaded_spirits.append({"Rarity": rarity,
                                    "Variant Name": variant_name,
-                                   "Worth": f"${worth}",
+                                   "Worth": f"{worth}",
                                    "Gold per Minute": gold_production})
 
         print("")
-        print("===================Egg Inventory===================")
+        print("=================Spirit Inventory=================")
         print("No |  Rarity   |  Variant  |  Worth  | Gold/Minute")
         for spirit in loaded_spirits:
             index += 1
-            print("{0}  |  {1:<9}|  {2:<6}   |  ${3:<4} | {4}".format(index, rarity, variant_name, worth, gold_production))
+            print("{0}  |  {1:<9}|  {2:<6}   |  ${3:<4}  | {4:<5}".format(index, spirit['Rarity'], spirit['Variant Name'], spirit['Worth'], spirit['Gold per Minute']))
         print("")
 
 
@@ -475,6 +508,6 @@ def is_incubator_full():
 def incubator_full():
     print("Oops! You do not have enough space in your incubator. Sell or hatch an egg first.")
 
-
+check_money()
 check_spirit_storage()
 check_egg_storage()
