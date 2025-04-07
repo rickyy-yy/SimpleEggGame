@@ -1,7 +1,10 @@
 import json
 import os
 import random
-import time
+import time as tm
+import multiprocessing
+import atexit
+import sys
 from datetime import *
 
 COMMON_SPIRITS = ["Wood", "Grass", "Fire"]
@@ -13,6 +16,7 @@ SPIRIT_STORAGE_PATH = r"C:\Users\Richie\Documents\Python\SimpleEggGame\spirit_st
 MONEY_PATH = r"C:\Users\Richie\Documents\Python\SimpleEggGame\money.txt"
 
 money: int
+alive = True
 
 
 class Egg:
@@ -60,8 +64,6 @@ class Egg:
             "Worth": self.worth,
             "Hatched": self.hatched
         }
-
-        print("Ding! An egg has arrived in your inventory.")
 
         self.check_hatch_status()
 
@@ -234,9 +236,9 @@ def get_next_egg_id():
 def get_next_spirit_id():
     with open(SPIRIT_STORAGE_PATH, "r") as file:
         lines = file.readlines()
-        if lines:
-            lines = json.loads(lines[0])
-            next_spirit_id = int(list(lines.keys())[len(lines.keys()) - 1]) + 1
+        lines = json.loads(lines[0])
+        if len(lines) != 0:
+            next_spirit_id = int(list(lines.keys())[len(lines.keys()) - 1])
             return next_spirit_id
         else:
             return 0
@@ -300,7 +302,7 @@ def egg_shop():
                     else:
                         not_enough_money()
                 case _:
-                    break
+                    menu()
         except ValueError:
             pass
 
@@ -352,21 +354,25 @@ def initiate_beginner():
 def give_common_egg():
     common_egg = Egg("Common")
     common_egg.store_egg()
+    print("Ding! A Common egg arrived in your inventory.")
 
 
 def give_uncommon_egg():
     uncommon_egg = Egg("Uncommon")
     uncommon_egg.store_egg()
+    print("Ding! A Uncommon egg arrived in your inventory.")
 
 
 def give_rare_egg():
     rare_egg = Egg("Rare")
     rare_egg.store_egg()
+    print("Ding! A Rare egg arrived in your inventory.")
 
 
 def give_legendary_egg():
     legendary_egg = Egg("Legendary")
     legendary_egg.store_egg()
+    print("Ding! A Legendary egg arrived in your inventory.")
 
 
 def menu():
@@ -375,10 +381,11 @@ def menu():
     print("1| Egg Shop")
     print("2| Egg Incubators")
     print("3| Spirit Pouch")
+    print("4| Exit Game")
     print("")
     while True:
         try:
-            choice = int(input("Enter the list number (1) of the page you wish to go to: "))
+            choice = int(input("Enter the list number (1/2/3/4) of the page you wish to go to: "))
             match choice:
                 case 1:
                     egg_shop()
@@ -386,6 +393,8 @@ def menu():
                     view_eggs()
                 case 3:
                     view_spirits()
+                case 4:
+                    exit_game(process)
                 case _:
                     pass
         except ValueError:
@@ -508,6 +517,45 @@ def is_incubator_full():
 def incubator_full():
     print("Oops! You do not have enough space in your incubator. Sell or hatch an egg first.")
 
-check_money()
-check_spirit_storage()
-check_egg_storage()
+
+def give_gold():
+    global money
+    total_gold_per_minute = 0
+    with open(SPIRIT_STORAGE_PATH, "r") as file:
+        lines = file.readlines()
+        spirits = json.loads(lines[0])
+
+    for spirit_id, spirit_data in spirits.items():
+        total_gold_per_minute += spirit_data["Gold per Minute"]
+
+    money += total_gold_per_minute
+
+
+def start_money_giver():
+    while alive:
+        tm.sleep(60)
+        give_gold()
+
+
+process = multiprocessing.Process(target=start_money_giver)
+
+
+def main():
+    if __name__ == '__main__':
+        check_money()
+        check_spirit_storage()
+
+        atexit.register(update_money)
+
+        process.start()
+
+        check_egg_storage()
+
+
+def exit_game(process):
+    update_money()
+    process.terminate()
+    exit(0)
+
+
+main()
