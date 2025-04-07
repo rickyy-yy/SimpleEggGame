@@ -10,7 +10,9 @@ Currently, the planned features include:
 - Special effects from Rare and Legendary eggs
 - Egg selling
 - Encryption to ensure data cannot be directly altered
-- Egg upgrades
+- Spirits that generate gold
+- Spirit selling
+- Spirit upgrade
 
 The game is not coded with public use in mind yet and continuous development is not guaranteed.
 
