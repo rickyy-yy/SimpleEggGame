@@ -539,7 +539,6 @@ def start_money_giver():
 
 process = multiprocessing.Process(target=start_money_giver)
 
-
 def main():
     if __name__ == '__main__':
         check_money()
